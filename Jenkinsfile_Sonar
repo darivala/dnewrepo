@@ -1,0 +1,24 @@
+pipeline {
+  agent any
+  stages {
+    stage('Source code') {
+	  steps {
+	    git 'https://github.com/mohansgithub/FLIPAMAZON.git'
+	  }
+	}
+	stage('Maven Build') {
+	  steps {
+	    bat 'mvn clean install'
+	  }
+	}
+	stage('Sonar Runner') {
+      steps{
+        withSonarQubeEnv(credentialsId: 'fd9d421b-4c51-4175-b0cc-3e8923d8b35c', installationName: 'sonarquberunner') {
+          bat 'mvn clean package sonar:sonar'
+                  
+        }
+           }
+	}
+  }
+}
+

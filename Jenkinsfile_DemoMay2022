@@ -1,0 +1,53 @@
+pipeline{
+  agent { node { label 'AWSNodeMohan' } } 
+  environment {
+    IMAGE_TAG = "${env.BUILD_NUMBER}"
+    myImageName = "demotrain2022"
+    myDockerhub = "mohanraj123"
+  }
+  stages{
+    stage('SCM Checkout'){
+     steps{
+          git 'https://github.com/mohansgithub/new-web-app.git'
+          }
+  }
+
+    stage('MVN Buildt'){ 
+            steps{
+                sh 'mvn clean install'
+            }
+        }
+    stage('Maven packing'){
+     steps{
+           sh 'mvn clean package'
+        }
+    }
+    stage('cleanup'){
+     steps{
+          sh '''
+          pwd
+          sudo sh ./clean_docker.sh
+          '''
+        }
+    }
+    stage('Build & Deploy New Image'){
+     steps{
+        withCredentials([usernamePassword(credentialsId: '5f792e13-931e-4002-8ff5-0998ff8124c4',usernameVariable: 'ARTIUSERNAME', passwordVariable: 'ARTIPASSWORD')]){
+        script {
+          sh '''
+           sudo docker login -u ${ARTIUSERNAME} -p ${ARTIPASSWORD} docker.io
+           sudo docker build -t docker.io/${myDockerhub}/${myImageName}:${IMAGE_TAG} .
+           sudo docker push docker.io/${myDockerhub}/${myImageName}:${IMAGE_TAG} 
+           sudo docker images
+           sudo docker ps -f name=${myImageName} -q | xargs --no-run-if-empty sudo docker container stop
+           sudo docker container ls -a -fname=${myImageName} -q | xargs -r sudo docker container rm
+           sudo docker system prune -f -a
+           sudo docker run -d -p 8080:8080 --name ${myImageName}_${IMAGE_TAG} ${myDockerhub}/${myImageName}:${IMAGE_TAG}
+           sudo docker logout 
+           '''
+        }
+       }
+     }
+   }
+  }
+}

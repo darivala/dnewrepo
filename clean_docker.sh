@@ -1,5 +1,4 @@
 #!/bin/bash
-# Shamelessly stolen from https://gist.github.com/eduardocardoso/82a629882ddb02ab3677
 
 set -o errexit
 
